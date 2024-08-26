@@ -1,6 +1,6 @@
 import type { Result } from "../../../utils/Result";
-import type { Command } from "../../domain/commands/Command";
+import type { InputValue } from "../../domain/entities/InputEntity";
 
-export default interface CommandFactory {
-	createCommand(input: unknown): Result<Command, string>;
+export default interface EntityFactory {
+	createInput(input: Buffer): Result<InputValue, string>;
 }

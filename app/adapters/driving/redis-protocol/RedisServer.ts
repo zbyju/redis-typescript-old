@@ -1,6 +1,8 @@
 import { createServer, type Server, type Socket } from "node:net";
 import { parseInput } from "./parse/parsing";
-import RedisCommandFactory from "./RedisCommandFactory";
+import RedisCommandFactory from "./RedisEntityFactory";
+import { createCommand } from "../../../core/domain/entities/InputEntity";
+import { failure } from "../../../utils/Result";
 
 export default class RedisServer {
 	private port: number;
@@ -21,14 +23,14 @@ export default class RedisServer {
 	start() {
 		this.server = createServer((connection: Socket) => {
 			connection.on("data", (data: Buffer) => {
-				const parsed = parseInput(data);
-				if (parsed.isFailure()) return;
+				const input = RedisCommandFactory.createInput(data);
+				if (input.isFailure()) return failure(input);
 
-				const command = RedisCommandFactory.createCommand(parsed.get());
-				if (command.isFailure()) return;
+				const command = createCommand(input.get());
+				if (command.isFailure()) return failure(command);
 
 				const result = command.get().run();
-				if (result.isFailure()) return;
+				if (result.isFailure()) return failure(result);
 
 				connection.write(`+${result.get()}\r\n`);
 			});

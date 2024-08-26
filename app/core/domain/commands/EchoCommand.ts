@@ -1,13 +1,15 @@
 import { success, type Result } from "../../../utils/Result";
 import type { Command } from "./Command";
 
-export default class PingCommand implements Command {
+export default class EchoCommand implements Command {
 	readonly name: string;
-	constructor() {
+	toEcho: string;
+	constructor(str: string) {
 		this.name = "PING";
+		this.toEcho = str;
 	}
 
 	run(): Result<string, string> {
-		return success("PONG");
+		return success(this.toEcho);
 	}
 }
