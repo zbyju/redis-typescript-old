@@ -1,5 +1,6 @@
 import type { DataStorePort } from "../../application/ports/data_store_port";
 import { failure, type Result, success } from "../../utils/Result";
+import { BasicItem, ExpirableItem } from "../entities/item";
 import { type RedisElement, RedisType } from "../entities/redis_element";
 import type {
 	Command,
@@ -45,18 +46,27 @@ async function executeGetCommand(
 	cmd: GetCommand,
 	dataStore: DataStorePort,
 ): CommandExecutionReturn {
+	console.log("Executing GET");
 	const result = await dataStore.get(cmd.key);
-	console.log(`GET response: ${JSON.stringify(result)}`);
+
 	if (result.isFailure())
 		return Promise.reject({ type: RedisType.BulkString, value: null });
-	return success({ type: RedisType.BulkString, value: result.get() });
+
+	console.log("GET success");
+	return success({ type: RedisType.BulkString, value: result.get().value });
 }
 
 async function executeSetCommand(
 	cmd: SetCommand,
 	dataStore: DataStorePort,
 ): CommandExecutionReturn {
-	const result = await dataStore.set(cmd.key, cmd.value);
+	const baseItem = new BasicItem(cmd.value);
+	const item =
+		cmd.expiry !== undefined
+			? new ExpirableItem(baseItem, cmd.expiry)
+			: baseItem;
+	const result = await dataStore.set(cmd.key, item);
+
 	if (result.isFailure()) Promise.reject(result);
 	return success({ type: RedisType.SimpleString, value: "OK" });
 }

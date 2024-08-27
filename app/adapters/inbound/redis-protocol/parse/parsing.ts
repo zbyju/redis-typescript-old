@@ -12,16 +12,12 @@ export function parseInput(data: Buffer): Result<RedisElement, string> {
 
 	const result = parseUnknown(s.split("\r\n").filter((i) => i !== ""));
 
-	console.log(`Parsed: ${JSON.stringify(result)}`);
-
 	return result.map((r) => r.result);
 }
 
 type ParseResult<T> = Result<{ result: T; rest: string[] }, string>;
 
 function parseUnknown(s: string[]): ParseResult<RedisElement> {
-	console.log(`Parsing unknown: ${s}`);
-
 	if (s.length === 0) return failure("Parse error: Empty input");
 
 	const line = s[0];
@@ -78,7 +74,7 @@ function parseArray(s: string[]): ParseResult<RedisArray> {
 
 	let rest = s.slice(1);
 	const result: RedisElement[] = [];
-	for (let i = 0; i < length; ++i) {
+	while (rest.length > 0) {
 		const item = parseUnknown(rest);
 		if (item.isFailure()) return item;
 

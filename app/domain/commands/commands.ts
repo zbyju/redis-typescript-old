@@ -1,7 +1,4 @@
-import type {
-	DataStoreKey,
-	DataStoreValue,
-} from "../../application/ports/data_store_port";
+import type { DataStoreKey, DataStoreValue } from "../entities/item";
 
 export type Command = PingCommand | EchoCommand | SetCommand | GetCommand;
 
@@ -18,9 +15,11 @@ export interface EchoCommand extends AbstractCommand {
 export interface GetCommand extends AbstractCommand {
 	name: "GET";
 	key: DataStoreKey;
+	time: Date;
 }
 export interface SetCommand extends AbstractCommand {
 	name: "SET";
 	key: DataStoreKey;
 	value: DataStoreValue;
+	expiry?: number;
 }

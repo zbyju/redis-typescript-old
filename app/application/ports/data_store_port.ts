@@ -1,14 +1,12 @@
 import type { Result } from "../../utils/Result";
-import type { RedisElement } from "../../domain/entities/redis_element";
-
-export type DataStoreKey = string;
-export type DataStoreValue = string;
+import type {
+	DataStoreKey,
+	DataStoreValue,
+	Item,
+} from "../../domain/entities/item";
 
 export interface DataStorePort {
-	set(
-		key: DataStoreKey,
-		value: DataStoreValue,
-	): Promise<Result<DataStoreValue, string>>;
+	set(key: DataStoreKey, value: Item): Promise<Result<Item, string>>;
 
-	get(key: DataStoreKey): Promise<Result<DataStoreValue, string>>;
+	get(key: DataStoreKey, now: Date): Promise<Result<Item, string>>;
 }

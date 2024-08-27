@@ -182,7 +182,7 @@ function createGetCommand(input: RedisArray): Result<GetCommand, string> {
 				"Parse error: GET command needs the argument to be a string",
 			);
 
-		return success({ name: "GET", key: key.value || "" });
+		return success({ name: "GET", key: key.value || "", time: new Date() });
 	}
 }
 
@@ -205,10 +205,34 @@ function createSetCommand(input: RedisArray): Result<SetCommand, string> {
 		)
 			return failure("Parse error: GET command needs the value to be a string");
 
+		let expiry = undefined;
+		for (let i = 3; i < input.value.length; ++i) {
+			const val = input.value[i];
+			if (!val) continue;
+
+			if (val.value === "px") {
+				const next = input.value.at(i + 1);
+				if (
+					!next ||
+					(next.type !== RedisType.BulkString &&
+						next.type !== RedisType.SimpleString &&
+						next.type !== RedisType.Integer)
+				) {
+					return failure(
+						"Parse error: PX option specified, but expiry time is not provided correctly",
+					);
+				}
+
+				++i;
+				expiry = Number(next.value);
+			}
+		}
+
 		return success({
 			name: "SET",
 			key: key.value || "",
 			value: value.value || "",
+			expiry: expiry,
 		});
 	}
 }

@@ -1,6 +1,9 @@
 import { createServer, type Server, type Socket } from "node:net";
 import { parseInput } from "./parse/parsing";
-import { createCommand } from "../../../domain/entities/redis_element";
+import {
+	createCommand,
+	RedisType,
+} from "../../../domain/entities/redis_element";
 import { executeCommand } from "../../../domain/commands/execute";
 import InMemoryDataStore from "../../outbound/in_memory/in_memory_data_store";
 import type { DataStorePort } from "../../../application/ports/data_store_port";
@@ -27,27 +30,37 @@ export default class RedisServer {
 		this.server = createServer((connection: Socket) => {
 			connection.on("data", async (data: Buffer) => {
 				const input = parseInput(data);
+				console.log(`Input: ${JSON.stringify(input)}`);
 				if (input.isFailure()) {
 					connection.write(`+${input}\r\n`);
 					return;
 				}
 
 				const command = createCommand(input.get());
+				console.log(`Command: ${JSON.stringify(command)}`);
 				if (command.isFailure()) {
 					connection.write(`+${command}\r\n`);
 					return;
 				}
 
-				const result = await executeCommand(command.get(), this.dataStore);
-				console.log(`Result: ${JSON.stringify(result)}`);
-				if (result.isFailure()) {
-					connection.write(`+${result}\r\n`);
+				try {
+					const result = await executeCommand(command.get(), this.dataStore);
+					if (result.isFailure()) throw result;
+
+					console.log(`Result: ${JSON.stringify(result)}`);
+
+					const output = encodeOutput(result.get());
+
+					connection.write(output);
+				} catch (err) {
+					console.log(
+						encodeOutput({ type: RedisType.BulkString, value: null }),
+					);
+					connection.write(
+						encodeOutput({ type: RedisType.BulkString, value: null }),
+					);
 					return;
 				}
-
-				const output = encodeOutput(result.get());
-
-				connection.write(output);
 			});
 		});
 
