@@ -1,4 +1,4 @@
-import RedisServer from "./adapters/driving/redis-protocol/RedisServer";
+import RedisServer from "./adapters/inbound/redis-protocol/redis_server";
 
 const redisServer = new RedisServer();
 

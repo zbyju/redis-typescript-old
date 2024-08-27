@@ -1,13 +1,13 @@
 import {
-	type InputArray,
-	type InputBulkString,
-	type InputSimpleString,
-	InputType,
-	type InputValue,
-} from "../../../../core/domain/entities/InputEntity";
+	type RedisArray,
+	type RedisBulkString,
+	type RedisSimpleString,
+	RedisType,
+	type RedisElement,
+} from "../../../../domain/entities/redis_element";
 import { failure, type Result, success } from "../../../../utils/Result";
 
-export function parseInput(data: Buffer): Result<InputValue, string> {
+export function parseInput(data: Buffer): Result<RedisElement, string> {
 	const s = data.toString();
 
 	const result = parseUnknown(s.split("\r\n").filter((i) => i !== ""));
@@ -19,7 +19,7 @@ export function parseInput(data: Buffer): Result<InputValue, string> {
 
 type ParseResult<T> = Result<{ result: T; rest: string[] }, string>;
 
-function parseUnknown(s: string[]): ParseResult<InputValue> {
+function parseUnknown(s: string[]): ParseResult<RedisElement> {
 	console.log(`Parsing unknown: ${s}`);
 
 	if (s.length === 0) return failure("Parse error: Empty input");
@@ -28,7 +28,7 @@ function parseUnknown(s: string[]): ParseResult<InputValue> {
 	if (line.length === 0) return failure("Parse error: Empty first line");
 
 	const first = line[0];
-	let result: ParseResult<InputValue>;
+	let result: ParseResult<RedisElement>;
 	switch (first) {
 		case "+":
 			result = parseSimpleString(s);
@@ -47,16 +47,16 @@ function parseUnknown(s: string[]): ParseResult<InputValue> {
 	return result;
 }
 
-function parseSimpleString(s: string[]): ParseResult<InputSimpleString> {
+function parseSimpleString(s: string[]): ParseResult<RedisSimpleString> {
 	if (s.length === 0) return failure("Parsing error: No simple string found.");
 
 	return success({
-		result: { value: s[0], type: InputType.SimpleString },
+		result: { value: s[0], type: RedisType.SimpleString },
 		rest: s.slice(1),
 	});
 }
 
-function parseBulkString(s: string[]): ParseResult<InputBulkString> {
+function parseBulkString(s: string[]): ParseResult<RedisBulkString> {
 	if (s.length < 2)
 		return failure(
 			`Parse error: Not enough lines to parse a bulk string (${s.length})`,
@@ -64,12 +64,12 @@ function parseBulkString(s: string[]): ParseResult<InputBulkString> {
 	const line = s[1];
 
 	return success({
-		result: { value: line.trim(), type: InputType.BulkString },
+		result: { value: line.trim(), type: RedisType.BulkString },
 		rest: s.slice(2),
 	});
 }
 
-function parseArray(s: string[]): ParseResult<InputArray> {
+function parseArray(s: string[]): ParseResult<RedisArray> {
 	const length = Number.parseInt(s[0].slice(1));
 	if (s.length - 1 < length)
 		return failure(
@@ -77,7 +77,7 @@ function parseArray(s: string[]): ParseResult<InputArray> {
 		);
 
 	let rest = s.slice(1);
-	const result: InputValue[] = [];
+	const result: RedisElement[] = [];
 	for (let i = 0; i < length; ++i) {
 		const item = parseUnknown(rest);
 		if (item.isFailure()) return item;
@@ -88,7 +88,7 @@ function parseArray(s: string[]): ParseResult<InputArray> {
 	}
 
 	return success({
-		result: { value: result, type: InputType.Array },
+		result: { value: result, type: RedisType.Array },
 		rest: s.slice(1),
 	});
 }
