@@ -1,7 +1,11 @@
 import type { DataStorePort } from "../../application/ports/data_store_port";
 import { failure, type Result, success } from "../../utils/Result";
 import { BasicItem, ExpirableItem } from "../entities/item";
-import { type RedisElement, RedisType } from "../entities/redis_element";
+import {
+	type RedisBulkString,
+	type RedisElement,
+	RedisType,
+} from "../entities/redis_element";
 import type {
 	Command,
 	ConfigGetCommand,
@@ -82,5 +86,9 @@ async function executeConfigGetCommand(
 	if (result.isFailure())
 		return Promise.reject({ type: RedisType.BulkString, value: null });
 
-	return success(result.get());
+	const output: RedisBulkString[] = result
+		.get()
+		.map((x) => ({ type: RedisType.BulkString, value: x }));
+
+	return success({ type: RedisType.Array, value: output });
 }

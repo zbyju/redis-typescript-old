@@ -37,15 +37,15 @@ export default class InMemoryDataStore implements DataStorePort {
 		this.config = config;
 	}
 
-	getConfigKeys(keys: string[]): Result<RedisArray, string> {
-		const result: RedisArray = { type: RedisType.Array, value: [] };
+	getConfigKeys(keys: string[]): Result<string[], string> {
+		const result: string[] = [];
 		for (const key of keys) {
 			if (!(key in this.config)) {
 				return failure(`${key} is not found in config`);
 			}
 			const value = this.config[key as keyof typeof this.config];
-			result.value.push({ type: RedisType.BulkString, value: key });
-			result.value.push({ type: RedisType.BulkString, value: value });
+			result.push(key);
+			result.push(value);
 		}
 		return success(result);
 	}
