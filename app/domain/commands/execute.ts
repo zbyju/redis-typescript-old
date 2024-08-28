@@ -4,6 +4,7 @@ import { BasicItem, ExpirableItem } from "../entities/item";
 import { type RedisElement, RedisType } from "../entities/redis_element";
 import type {
 	Command,
+	ConfigGetCommand,
 	EchoCommand,
 	GetCommand,
 	PingCommand,
@@ -29,6 +30,9 @@ export function executeCommand(
 		case "SET":
 			return executeSetCommand(command, dataStore);
 
+		case "CONFIG GET":
+			return executeConfigGetCommand(command, dataStore);
+
 		default:
 			return Promise.reject(failure("Unknown command"));
 	}
@@ -46,13 +50,11 @@ async function executeGetCommand(
 	cmd: GetCommand,
 	dataStore: DataStorePort,
 ): CommandExecutionReturn {
-	console.log("Executing GET");
-	const result = await dataStore.get(cmd.key);
+	const result = await dataStore.get(cmd.key, cmd.time);
 
 	if (result.isFailure())
 		return Promise.reject({ type: RedisType.BulkString, value: null });
 
-	console.log("GET success");
 	return success({ type: RedisType.BulkString, value: result.get().value });
 }
 
@@ -69,4 +71,16 @@ async function executeSetCommand(
 
 	if (result.isFailure()) Promise.reject(result);
 	return success({ type: RedisType.SimpleString, value: "OK" });
+}
+
+async function executeConfigGetCommand(
+	cmd: ConfigGetCommand,
+	dataStore: DataStorePort,
+): CommandExecutionReturn {
+	const result = dataStore.getConfigKeys(cmd.keys);
+
+	if (result.isFailure())
+		return Promise.reject({ type: RedisType.BulkString, value: null });
+
+	return success(result.get());
 }

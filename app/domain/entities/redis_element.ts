@@ -1,6 +1,7 @@
 import { failure, type Result, success } from "../../utils/Result";
 import type {
 	Command,
+	ConfigGetCommand,
 	EchoCommand,
 	GetCommand,
 	PingCommand,
@@ -139,6 +140,8 @@ export function createCommand(input: RedisElement): Result<Command, string> {
 			return createGetCommand(input);
 		case "SET":
 			return createSetCommand(input);
+		case "CONFIG":
+			return createConfigCommand(input);
 		default:
 			return failure(
 				`Parse error: Unknown command (${name.value.toUpperCase()})`,
@@ -233,6 +236,54 @@ function createSetCommand(input: RedisArray): Result<SetCommand, string> {
 			key: key.value || "",
 			value: value.value || "",
 			expiry: expiry,
+		});
+	}
+}
+
+function createConfigCommand(input: RedisArray): Result<Command, string> {
+	if (input.value.length <= 2)
+		return failure("Parse error: CONFIG command needs 2 arguments");
+
+	{
+		const type = input.value[1];
+		if (
+			type?.type !== RedisType.SimpleString &&
+			type?.type !== RedisType.BulkString
+		)
+			return failure(
+				"Parse error: CONFIG command needs the key to be a string",
+			);
+
+		switch (type.value) {
+			case "GET":
+				return createConfigGetCommand(input);
+
+			default:
+				return failure(`Parse error: Unknown CONFIG command ${type.value}`);
+		}
+	}
+}
+
+function createConfigGetCommand(
+	input: RedisArray,
+): Result<ConfigGetCommand, string> {
+	if (input.value.length <= 2)
+		return failure("Parse error: CONFIG GET command needs 3 arguments");
+
+	{
+		const keys: string[] = [];
+		for (let i = 2; i < input.value.length; ++i) {
+			const val = input.value[i];
+			if (!val) continue;
+
+			if (typeof val.value === "string") {
+				keys.push(val.value);
+			}
+		}
+
+		return success({
+			name: "CONFIG GET",
+			keys: keys,
 		});
 	}
 }

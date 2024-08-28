@@ -4,9 +4,14 @@ import type {
 	DataStoreValue,
 	Item,
 } from "../../domain/entities/item";
+import type { RedisArray } from "../../domain/entities/redis_element";
+import { RedisConfigType } from "../../domain/entities/config";
 
 export interface DataStorePort {
 	set(key: DataStoreKey, value: Item): Promise<Result<Item, string>>;
 
 	get(key: DataStoreKey, now: Date): Promise<Result<Item, string>>;
+
+	setConfig(config: RedisConfigType): void;
+	getConfigKeys(keys: string[]): Result<RedisArray, string>;
 }
